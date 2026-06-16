@@ -2,17 +2,11 @@
 # IMPORTAMOS LIBRERÍAS
 # ============================================================
 
-# Importamos Streamlit para crear la aplicación web interactiva
 import streamlit as st
-
-# Importamos Pandas para manipulación de datos
 import pandas as pd
-
-# Librerías de visualización
 import plotly.express as px
 import seaborn as sns
 import matplotlib.pyplot as plt
-
 
 # ============================================================
 # CONFIGURACIÓN DE LA APP
@@ -20,33 +14,27 @@ import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="App BI", layout="wide")
 
-
 # ============================================================
-# SESSION STATE (MEMORIA DE LA APP)
+# SESSION STATE
 # ============================================================
 
-# Guardamos el dataset cargado para que no se pierda al navegar
 if "data" not in st.session_state:
     st.session_state.data = None
 
-# Guardamos el nombre del archivo
 if "nombre_archivo" not in st.session_state:
     st.session_state.nombre_archivo = None
 
-
 # ============================================================
-# TÍTULO E INTERFAZ
+# INTERFAZ
 # ============================================================
 
 st.title("📊 App Analizadora de Datasets")
-
 st.sidebar.title("⚙️ Navegación")
 
 st.write("📌 Elaborado por: Carlos Alberto Portocarrero")
 
-
 # ============================================================
-# MENÚ PRINCIPAL
+# MENÚ
 # ============================================================
 
 modulos = st.sidebar.selectbox(
@@ -54,50 +42,39 @@ modulos = st.sidebar.selectbox(
     ["Home", "Carga y perfil del dataset", "Procesamiento de datos", "Análisis visual"]
 )
 
-
 # ============================================================
-# MÓDULO 1: HOME
+# HOME
 # ============================================================
 
 if modulos == "Home":
 
-    st.header("🏠 Presentación del proyecto")
+    st.header("🏠 Presentación")
 
     st.write("""
-    Esta aplicación permite realizar análisis exploratorio de datos (EDA).
+    Aplicación para análisis exploratorio de datos.
 
-    🔹 Permite cargar archivos CSV  
-    🔹 Detecta tipos de variables  
-    🔹 Genera visualizaciones dinámicas  
-    🔹 Facilita la toma de decisiones  
-
-    Tecnologías usadas:
+    Tecnologías:
     - Python
     - Pandas
     - Streamlit
     - Plotly
     - Seaborn
-
-    ⚠️ Nota: Este análisis es exploratorio.
     """)
 
-
 # ============================================================
-# MÓDULO 2: CARGA Y PERFIL
+# CARGA
 # ============================================================
 
 elif modulos == "Carga y perfil del dataset":
 
     st.header("📂 Carga de dataset")
 
-    # Subida de archivo
-    archivo = st.file_uploader("Sube tu archivo CSV", type=["csv"])
+    archivo = st.file_uploader("Sube tu CSV", type=["csv"])
 
     if archivo is not None:
 
         df = pd.read_csv(archivo)
 
-        # Guardamos en memoria
         st.session_state.data = df
         st.session_state.nombre_archivo = archivo.name
 
@@ -105,10 +82,7 @@ elif modulos == "Carga y perfil del dataset":
 
         df = st.session_state.data
 
-        st.subheader("Vista previa")
         st.dataframe(df.head())
-
-        st.subheader("Información general")
 
         col1, col2, col3 = st.columns(3)
 
@@ -116,62 +90,52 @@ elif modulos == "Carga y perfil del dataset":
         col2.metric("Columnas", df.shape[1])
         col3.metric("Nulos", df.isnull().sum().sum())
 
-        st.write("Columnas:", df.columns.tolist())
-        st.write("Tipos de datos:", df.dtypes)
+        st.write(df.dtypes)
 
-        # Estadística descriptiva (REQUERIDO)
         st.subheader("Estadística descriptiva")
         st.dataframe(df.describe())
 
     else:
-        st.warning("⚠️ Carga un archivo primero")
-
+        st.warning("Carga un archivo")
 
 # ============================================================
-# MÓDULO 3: PROCESAMIENTO
+# PROCESAMIENTO
 # ============================================================
 
 elif modulos == "Procesamiento de datos":
 
-    st.header("🛠 Procesamiento de datos")
+    st.header("🛠 Procesamiento")
 
     if st.session_state.data is None:
-        st.warning("Debes cargar un dataset")
+        st.warning("Carga datos primero")
     else:
 
         df = st.session_state.data
 
-        # Detectamos tipos automáticamente
         numericas = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
         categoricas = df.select_dtypes(include=['object']).columns.tolist()
-
-        st.subheader("Tipos de variables")
 
         st.write("Numéricas:", numericas)
         st.write("Categóricas:", categoricas)
 
-        # Nulos
-        st.subheader("Valores nulos")
+        st.subheader("Nulos")
         st.dataframe(df.isnull().sum())
 
-        # Duplicados
         st.subheader("Duplicados")
         st.write(df.duplicated().sum())
 
-        # Filtro dinámico
         if len(categoricas) > 0:
 
-            columna = st.selectbox("Filtrar por categoría", categoricas)
-            valores = st.multiselect("Valores", df[columna].unique())
+            col = st.selectbox("Filtrar", categoricas)
+            vals = st.multiselect("Valores", df[col].unique())
 
-            if valores:
-                df = df[df[columna].isin(valores)]
+            if vals:
+                df = df[df[col].isin(vals)]
 
         st.dataframe(df)
 
-
 # ============================================================
-# MÓDULO 4: ANÁLISIS VISUAL (CORE)
+# VISUAL
 # ============================================================
 
 elif modulos == "Análisis visual":
@@ -187,17 +151,14 @@ elif modulos == "Análisis visual":
         numericas = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
         categoricas = df.select_dtypes(include=['object']).columns.tolist()
 
-        # Detectar posibles fechas
+        # detectar fechas
         fechas = []
         for col in df.columns:
             if "date" in col.lower():
                 fechas.append(col)
                 df[col] = pd.to_datetime(df[col], errors="coerce")
 
-        # =========================================================
-        # CREACIÓN DE TABS (OBLIGATORIO)
-        # =========================================================
-
+        # ✅ TABS CORRECTOS
         tabs = st.tabs([
             "📌 Resumen",
             "📊 Univariado",
@@ -207,50 +168,38 @@ elif modulos == "Análisis visual":
             "💡 Insights"
         ])
 
-        # =========================
-        # TAB 1: RESUMEN
-        # =========================
+        # ================= TAB 1 =================
         with tabsst.subheader("Información general")
 
             st.dataframe(df.head())
 
             col1, col2, col3 = st.columns(3)
-
             col1.metric("Filas", df.shape[0])
             col2.metric("Columnas", df.shape[1])
             col3.metric("Nulos", df.isnull().sum().sum())
 
-        # =========================
-        # TAB 2: UNIVARIADO
-        # =========================
-        with tabsst.subheader("Distribución de variables")
+        # ================= TAB 2 =================
+        with tabsst.subheader("Univariado")
 
-            col = st.selectbox("Selecciona variable", df.columns)
+            col = st.selectbox("Variable", df.columns)
 
-            # Histograma
             if col in numericas:
                 st.plotly_chart(px.histogram(df, x=col))
-                st.plotly_chart(px.box(df, y=col))  # outliers
-
-            # Barras
+                st.plotly_chart(px.box(df, y=col))
             else:
                 conteo = df[col].value_counts().reset_index()
                 conteo.columns = [col, "count"]
                 st.plotly_chart(px.bar(conteo, x=col, y="count"))
 
-        # =========================
-        # TAB 3: BIVARIADO
-        # =========================
-        with tabsst.subheader("Relación entre variables")
+        # ================= TAB 3 =================
+        with tabsst.subheader("Bivariado")
 
             if len(numericas) >= 2:
                 x = st.selectbox("X", numericas)
                 y = st.selectbox("Y", numericas)
                 st.plotly_chart(px.scatter(df, x=x, y=y))
 
-        # =========================
-        # TAB 4: MULTIVARIADO
-        # =========================
+        # ================= TAB 4 =================
         with tabsst.subheader("Correlación")
 
             if len(numericas) > 1:
@@ -259,36 +208,27 @@ elif modulos == "Análisis visual":
                 sns.heatmap(corr, annot=True, cmap="coolwarm", ax=ax)
                 st.pyplot(fig)
 
-        # =========================
-        # TAB 5: TEMPORAL
-        # =========================
-        with tabsst.subheader("Análisis temporal")
+        # ================= TAB 5 =================
+        with tabsst.subheader("Temporal")
 
             if len(fechas) > 0 and len(numericas) > 0:
-
                 fecha = st.selectbox("Fecha", fechas)
                 valor = st.selectbox("Valor", numericas)
 
                 df_temp = df.sort_values(by=fecha)
 
-                fig = px.line(df_temp, x=fecha, y=valor)
-                st.plotly_chart(fig)
-
+                st.plotly_chart(px.line(df_temp, x=fecha, y=valor))
             else:
-                st.info("No hay variables de fecha")
+                st.info("No hay variables fecha")
 
-        # =========================
-        # TAB 6: INSIGHTS
-        # =========================
-        with tabsst.subheader("Hallazgos")
+        # ================= TAB 6 =================
+        with tabsst.subheader("Insights")
 
-            st.success("Los datos muestran patrones importantes que pueden apoyar decisiones.")
+            st.success("Se detectan patrones en los datos.")
 
             if len(numericas) > 0:
-                col = numericas[0]
-                st.write(f"Ejemplo: La variable {col} tiene tendencia variable.")
+                st.write(f"La variable {numericas[0]} presenta variabilidad.")
 
             if len(categoricas) > 0:
-                col = categoricas[0]
-                st.write(f"La categoría más frecuente en {col} es:")
-                st.write(df[col].value_counts().idxmax())
+                st.write(f"Categoría más frecuente:")
+                st.write(df[categoricas[0]].value_counts().idxmax())
